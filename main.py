@@ -500,9 +500,11 @@ elif app_mode == "연도별 세계인구 분석":
 
     df_pop = load_world_population()
 
-    # 사용할 연도들 (CSV 컬럼명과 연결)
+    # 사용할 연도들 (CSV 컬럼: 1970, 1980, ..., 2022)
     year_list = [1970, 1980, 1990, 2000, 2010, 2015, 2020, 2022]
-    year = st.selectbox("연도 선택", year_list, index=len(year_list) - 1)
+
+    # 🔹 슬라이드바 형태로 연도 선택 (select_slider 사용)
+    year = st.select_slider("연도 선택", options=year_list, value=2022)
 
     st.markdown("---")
 
@@ -511,7 +513,7 @@ elif app_mode == "연도별 세계인구 분석":
     # -----------------------------
     st.markdown(f"### 🗺 {year}년 세계 인구 분포 (구간별 색칠)")
 
-    pop_col = f"{year} Population"
+    pop_col = str(year)  # CSV에서 연도 컬럼 이름이 '1970', '1980', ... 형태라고 가정
     if pop_col not in df_pop.columns:
         st.error(f"데이터에 `{pop_col}` 컬럼이 없습니다. CSV 컬럼명을 확인하세요.")
     else:
@@ -530,9 +532,9 @@ elif app_mode == "연도별 세계인구 분석":
 
         fig_pop = px.choropleth(
             df_map,
-            locations="CCA3",  # 3자리 국가 코드
+            locations="code",              # 3자리 국가 코드 (예: USA, KOR)
             color="Population Range",
-            hover_name="Country/Territory",
+            hover_name="Country",
             hover_data={pop_col: ":,"},
             category_orders={"Population Range": labels_pop},
             title=f"{year}년 세계 인구 (구간별 인구수)"
@@ -576,9 +578,9 @@ elif app_mode == "연도별 세계인구 분석":
 
         fig_pct = px.choropleth(
             df_pct,
-            locations="CCA3",
+            locations="code",
             color="World Pop Share Range",
-            hover_name="Country/Territory",
+            hover_name="Country",
             hover_data={"World Population Percentage": True},
             category_orders={"World Pop Share Range": labels_pct},
             title="세계 인구에서 각 국가가 차지하는 비율(%) 구간"
