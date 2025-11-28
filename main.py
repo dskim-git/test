@@ -1,29 +1,35 @@
 import math
 import streamlit as st
 
-# -----------------------------------
+# -----------------------------
 # 기본 설정
-# -----------------------------------
+# -----------------------------
 st.set_page_config(
-    page_title="다기능 계산기",
+    page_title="다기능 수학 계산기",
     page_icon="🧮",
-    layout="centered"
+    layout="centered",
 )
 
-st.title("🧮 다기능 계산기")
-st.write("사칙연산, 모듈러 연산, 지수 연산, 로그 연산을 한 곳에서 계산해 보세요.")
+st.title("🧮 다기능 수학 계산기")
+st.write("사칙연산, 모듈러 연산, 지수 연산, 로그 연산을 할 수 있는 웹 계산기입니다.")
 
-# 사이드바에서 기능 선택
+# -----------------------------
+# 사이드바: 연산 종류 선택
+# -----------------------------
+st.sidebar.header("연산 종류 선택")
 mode = st.sidebar.radio(
-    "계산 기능 선택",
+    "사용할 계산 기능을 선택하세요.",
     ("사칙연산", "모듈러 연산", "지수 연산", "로그 연산")
 )
 
-# -----------------------------------
-# 1. 사칙연산 계산기
-# -----------------------------------
+st.sidebar.info("👈 왼쪽에서 기능을 선택하고, 화면에서 값을 입력한 뒤 계산 버튼을 눌러보세요.")
+
+
+# -----------------------------
+# 1. 사칙연산
+# -----------------------------
 if mode == "사칙연산":
-    st.header("➕ 사칙연산 계산기")
+    st.subheader("➕➖✖️➗ 사칙연산")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -31,110 +37,122 @@ if mode == "사칙연산":
     with col2:
         b = st.number_input("두 번째 수 (b)", value=0.0, format="%.6f")
 
-    op = st.radio(
-        "연산 선택",
-        ("더하기 (a + b)", "빼기 (a - b)", "곱하기 (a × b)", "나누기 (a ÷ b)")
+    op = st.selectbox(
+        "연산자를 선택하세요.",
+        ("+", "-", "×", "÷")
     )
 
-    if st.button("계산하기", key="basic_calc"):
-        if op == "더하기 (a + b)":
-            result = a + b
-            st.success(f"결과: {a} + {b} = {result}")
-        elif op == "빼기 (a - b)":
-            result = a - b
-            st.success(f"결과: {a} - {b} = {result}")
-        elif op == "곱하기 (a × b)":
-            result = a * b
-            st.success(f"결과: {a} × {b} = {result}")
-        elif op == "나누기 (a ÷ b)":
-            if b == 0:
-                st.error("0으로는 나눌 수 없습니다. (b ≠ 0)")
+    if st.button("사칙연산 계산하기"):
+        try:
+            if op == "+":
+                result = a + b
+            elif op == "-":
+                result = a - b
+            elif op == "×":
+                result = a * b
+            elif op == "÷":
+                if b == 0:
+                    st.error("0으로 나눌 수 없습니다.")
+                    result = None
+                else:
+                    result = a / b
             else:
-                result = a / b
-                st.success(f"결과: {a} ÷ {b} = {result}")
+                result = None
 
-# -----------------------------------
-# 2. 모듈러 연산 계산기
-# -----------------------------------
+            if result is not None:
+                st.success(f"결과: {a} {op} {b} = {result}")
+        except Exception as e:
+            st.error(f"계산 중 오류가 발생했습니다: {e}")
+
+
+# -----------------------------
+# 2. 모듈러 연산
+# -----------------------------
 elif mode == "모듈러 연산":
-    st.header("🔢 모듈러 연산 계산기 (a mod n)")
+    st.subheader("♻️ 모듈러 연산 (a mod n)")
 
     col1, col2 = st.columns(2)
     with col1:
         a = st.number_input("피제수 (a)", value=0, step=1)
     with col2:
-        n = st.number_input("법 (n, 양의 정수)", value=1, step=1, min_value=1)
+        n = st.number_input("법(mod) n", value=1, step=1, min_value=1)
 
-    st.caption("※ 정수 연산을 권장합니다. (소수로 입력해도 내부에서 정수로 변환하지는 않습니다)")
+    st.caption("※ 모듈러 연산은 보통 정수에 대해 정의되므로, 여기서는 정수 입력을 권장합니다.")
 
-    if st.button("계산하기", key="mod_calc"):
-        if n == 0:
-            st.error("법 n은 0이 될 수 없습니다.")
-        else:
-            # 파이썬의 %는 음수도 처리 가능하지만, 여기서는 일반적인 의미로 안내
-            result = a % n
-            st.success(f"결과: {a} mod {n} = {result}")
-
-# -----------------------------------
-# 3. 지수 연산 계산기
-# -----------------------------------
-elif mode == "지수 연산":
-    st.header("📈 지수 연산 계산기 (a^b)")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        a = st.number_input("밑 (a)", value=2.0, format="%.6f")
-    with col2:
-        b = st.number_input("지수 (b)", value=3.0, format="%.6f")
-
-    st.caption("※ a^b 형태의 지수 연산을 계산합니다.")
-
-    if st.button("계산하기", key="exp_calc"):
+    if st.button("모듈러 연산 계산하기"):
         try:
-            result = a ** b
-            st.success(f"결과: {a} ^ {b} = {result}")
-        except OverflowError:
-            st.error("값이 너무 커서 계산할 수 없습니다.")
+            # 정수로 강제 변환 (필요 없으면 이 부분 제거 가능)
+            a_int = int(a)
+            n_int = int(n)
+
+            if n_int == 0:
+                st.error("법 n이 0일 수는 없습니다.")
+            else:
+                result = a_int % n_int
+                st.success(f"결과: {a_int} mod {n_int} = {result}")
         except Exception as e:
             st.error(f"계산 중 오류가 발생했습니다: {e}")
 
-# -----------------------------------
-# 4. 로그 연산 계산기
-# -----------------------------------
-elif mode == "로그 연산":
-    st.header("📉 로그 연산 계산기 (log₍b₎(x))")
 
-    x = st.number_input("진수 (x, x > 0)", value=10.0, format="%.6f")
-    base_type = st.radio(
-        "로그 종류 선택",
-        ("상용로그 (log₁₀ x)", "자연로그 (ln x)", "밑을 내가 정하기")
+# -----------------------------
+# 3. 지수 연산
+# -----------------------------
+elif mode == "지수 연산":
+    st.subheader("⬆️ 지수 연산 (a^b)")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        base = st.number_input("밑 (a)", value=2.0, format="%.6f")
+    with col2:
+        exp = st.number_input("지수 (b)", value=3.0, format="%.6f")
+
+    if st.button("지수 연산 계산하기"):
+        try:
+            result = base ** exp
+            st.success(f"결과: {base} ^ {exp} = {result}")
+        except OverflowError:
+            st.error("값이 너무 커서 계산할 수 없습니다. (OverflowError)")
+        except Exception as e:
+            st.error(f"계산 중 오류가 발생했습니다: {e}")
+
+
+# -----------------------------
+# 4. 로그 연산
+# -----------------------------
+elif mode == "로그 연산":
+    st.subheader("📉 로그 연산")
+
+    st.write("로그의 밑과 진수(값)를 입력하고 로그 값을 계산합니다.")
+
+    value = st.number_input("진수 (log₍base₎(value)에서 value)", value=10.0, format="%.6f", min_value=0.0)
+    base_option = st.radio(
+        "밑 선택",
+        ("상용로그 (밑 10)", "자연로그 (밑 e)", "사용자 지정 밑")
     )
 
-    custom_base = None
-    if base_type == "밑을 내가 정하기":
-        custom_base = st.number_input("밑 (b, b > 0, b ≠ 1)", value=2.0, format="%.6f")
+    if base_option == "사용자 지정 밑":
+        base = st.number_input("밑 (base)", value=2.0, format="%.6f")
+    elif base_option == "상용로그 (밑 10)":
+        base = 10
+    else:  # 자연로그
+        base = math.e
 
-    if st.button("계산하기", key="log_calc"):
-        if x <= 0:
-            st.error("진수 x는 0보다 커야 합니다.")
-        else:
-            try:
-                if base_type == "상용로그 (log₁₀ x)":
-                    result = math.log10(x)
-                    st.success(f"결과: log₁₀({x}) = {result}")
-                elif base_type == "자연로그 (ln x)":
-                    result = math.log(x)
-                    st.success(f"결과: ln({x}) = {result}")
+    if st.button("로그 계산하기"):
+        try:
+            if value <= 0:
+                st.error("로그의 진수는 0보다 커야 합니다.")
+            elif base <= 0 or base == 1:
+                st.error("로그의 밑은 0보다 크고 1이 아니어야 합니다.")
+            else:
+                # 로그 밑 변경 공식 사용: log_base(value) = ln(value) / ln(base)
+                result = math.log(value) / math.log(base)
+                if base_option == "자연로그 (밑 e)":
+                    st.success(f"결과: ln({value}) = {result}")
+                elif base_option == "상용로그 (밑 10)":
+                    st.success(f"결과: log₁₀({value}) = {result}")
                 else:
-                    if custom_base is None:
-                        st.error("밑 b를 입력해 주세요.")
-                    elif custom_base <= 0 or custom_base == 1:
-                        st.error("밑 b는 0보다 크고 1이 아니어야 합니다.")
-                    else:
-                        # 밑이 b인 로그: log_b(x) = ln(x) / ln(b)
-                        result = math.log(x) / math.log(custom_base)
-                        st.success(f"결과: log₍{custom_base}₎({x}) = {result}")
-            except ValueError:
-                st.error("로그를 계산할 수 없는 입력입니다.")
-            except Exception as e:
-                st.error(f"계산 중 오류가 발생했습니다: {e}")
+                    st.success(f"결과: log₍{base}₎({value}) = {result}")
+        except ValueError:
+            st.error("입력값이 로그의 정의역을 벗어났습니다.")
+        except Exception as e:
+            st.error(f"계산 중 오류가 발생했습니다: {e}")
