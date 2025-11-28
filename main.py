@@ -1,11 +1,14 @@
 import math
+import random
+import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 # -----------------------------------
 # 기본 설정
 # -----------------------------------
 st.set_page_config(
-    page_title="다기능 계산기",
+    page_title="다기능 수학 웹앱",
     page_icon="🧮",
     layout="centered"
 )
@@ -142,220 +145,330 @@ st.markdown(
 )
 
 # -----------------------------------
-# 세션 상태: 디스플레이 표현
+# 세션 상태: 계산기 디스플레이 텍스트
 # -----------------------------------
 if "display_text" not in st.session_state:
     st.session_state.display_text = "0"
 
 # -----------------------------------
-# 제목
+# 사이드바: 앱 선택
 # -----------------------------------
-st.markdown('<h1 class="center-title">🧮 Multi Calculator</h1>', unsafe_allow_html=True)
+st.sidebar.title("🧮 수학 웹앱")
+app_mode = st.sidebar.radio(
+    "사용할 앱 선택",
+    ("계산기", "확률 시뮬레이터")
+)
+
+# -----------------------------------
+# 공통 상단 제목
+# -----------------------------------
+st.markdown('<h1 class="center-title">🧮 Multi Math App</h1>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="center-subtitle">사칙연산 · 모듈러 · 지수 · 로그를 하나의 계산기에서!</div>',
+    '<div class="center-subtitle">계산기와 확률 시뮬레이터를 한 번에!</div>',
     unsafe_allow_html=True
 )
 
-# 사이드바에서 기능 선택
-mode = st.sidebar.radio(
-    "계산 모드 선택",
-    ("사칙연산", "모듈러 연산", "지수 연산", "로그 연산")
-)
+# =============================================================================
+# 1. 계산기 앱
+# =============================================================================
+if app_mode == "계산기":
 
-# -----------------------------------
-# 계산기 카드 시작
-# -----------------------------------
-st.markdown('<div class="calculator-container">', unsafe_allow_html=True)
+    # 계산기 내부 모드 (사칙/모듈러/지수/로그)는 사이드바에서 선택
+    calc_mode = st.sidebar.radio(
+        "계산 모드 선택",
+        ("사칙연산", "모듈러 연산", "지수 연산", "로그 연산")
+    )
 
-# 디스플레이 영역
-st.markdown(
-    f"""
-    <div class="calc-display">
-        <div class="calc-display-label">RESULT</div>
-        <div class="calc-display-value">{st.session_state.display_text}</div>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+    # 계산기 카드 시작
+    st.markdown('<div class="calculator-container">', unsafe_allow_html=True)
 
-# 모드 태그
-st.markdown(f'<div class="calc-mode-tag">{mode}</div>', unsafe_allow_html=True)
-
-# -----------------------------------
-# 1. 사칙연산
-# -----------------------------------
-if mode == "사칙연산":
+    # 디스플레이 영역
     st.markdown(
-        """
-        <div class="calc-section">
-            <div class="calc-section-title">사칙연산 설정</div>
-            <div class="calc-section-caption">두 수를 입력하고 원하는 연산을 선택하세요.</div>
+        f"""
+        <div class="calc-display">
+            <div class="calc-display-label">RESULT</div>
+            <div class="calc-display-value">{st.session_state.display_text}</div>
         </div>
         """,
         unsafe_allow_html=True
     )
 
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            a = st.number_input("첫 번째 수 (a)", value=0.0, format="%.6f", key="basic_a")
-        with col2:
-            b = st.number_input("두 번째 수 (b)", value=0.0, format="%.6f", key="basic_b")
+    # 모드 태그
+    st.markdown(f'<div class="calc-mode-tag">{calc_mode}</div>', unsafe_allow_html=True)
 
-        op = st.radio(
-            "연산 선택",
-            ("더하기 (a + b)", "빼기 (a - b)", "곱하기 (a × b)", "나누기 (a ÷ b)"),
-            horizontal=True
+    # -------------------------------
+    # 1-1. 사칙연산
+    # -------------------------------
+    if calc_mode == "사칙연산":
+        st.markdown(
+            """
+            <div class="calc-section">
+                <div class="calc-section-title">사칙연산 설정</div>
+                <div class="calc-section-caption">두 수를 입력하고 원하는 연산을 선택하세요.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
-        if st.button("계산하기", key="basic_calc"):
-            if op == "더하기 (a + b)":
-                result = a + b
-                expr = f"{a} + {b} = {result}"
-            elif op == "빼기 (a - b)":
-                result = a - b
-                expr = f"{a} - {b} = {result}"
-            elif op == "곱하기 (a × b)":
-                result = a * b
-                expr = f"{a} × {b} = {result}"
-            else:  # 나누기
-                if b == 0:
-                    st.error("0으로는 나눌 수 없습니다. (b ≠ 0)")
-                    expr = "Error: divide by 0"
-                else:
-                    result = a / b
-                    expr = f"{a} ÷ {b} = {result}"
+        with st.container():
+            col1, col2 = st.columns(2)
+            with col1:
+                a = st.number_input("첫 번째 수 (a)", value=0.0, format="%.6f", key="basic_a")
+            with col2:
+                b = st.number_input("두 번째 수 (b)", value=0.0, format="%.6f", key="basic_b")
 
-            st.session_state.display_text = expr
-            st.rerun()
+            op = st.radio(
+                "연산 선택",
+                ("더하기 (a + b)", "빼기 (a - b)", "곱하기 (a × b)", "나누기 (a ÷ b)"),
+                horizontal=True
+            )
 
-# -----------------------------------
-# 2. 모듈러 연산
-# -----------------------------------
-elif mode == "모듈러 연산":
-    st.markdown(
-        """
-        <div class="calc-section">
-            <div class="calc-section-title">모듈러 연산 설정</div>
-            <div class="calc-section-caption">a mod n 형태의 연산을 계산합니다.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            a = st.number_input("피제수 (a)", value=0, step=1, key="mod_a")
-        with col2:
-            n = st.number_input("법 (n, 양의 정수)", value=1, step=1, min_value=1, key="mod_n")
-
-        st.caption("※ 정수 입력을 권장합니다. (파이썬의 % 규칙을 그대로 사용합니다.)")
-
-        if st.button("계산하기", key="mod_calc"):
-            if n == 0:
-                st.error("법 n은 0이 될 수 없습니다.")
-                expr = "Error: n = 0"
-            else:
-                result = a % n
-                expr = f"{a} mod {n} = {result}"
-
-            st.session_state.display_text = expr
-            st.rerun()
-
-# -----------------------------------
-# 3. 지수 연산
-# -----------------------------------
-elif mode == "지수 연산":
-    st.markdown(
-        """
-        <div class="calc-section">
-            <div class="calc-section-title">지수 연산 설정</div>
-            <div class="calc-section-caption">a^b 형태의 지수 연산을 계산합니다.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            a = st.number_input("밑 (a)", value=2.0, format="%.6f", key="exp_a")
-        with col2:
-            b = st.number_input("지수 (b)", value=3.0, format="%.6f", key="exp_b")
-
-        if st.button("계산하기", key="exp_calc"):
-            try:
-                result = a ** b
-                expr = f"{a} ^ {b} = {result}"
-            except OverflowError:
-                st.error("값이 너무 커서 계산할 수 없습니다.")
-                expr = "Error: overflow"
-            except Exception as e:
-                st.error(f"계산 중 오류가 발생했습니다: {e}")
-                expr = "Error"
-
-            st.session_state.display_text = expr
-            st.rerun()
-
-# -----------------------------------
-# 4. 로그 연산
-# -----------------------------------
-elif mode == "로그 연산":
-    st.markdown(
-        """
-        <div class="calc-section">
-            <div class="calc-section-title">로그 연산 설정</div>
-            <div class="calc-section-caption">상용로그, 자연로그, 임의의 밑 로그를 계산합니다.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    with st.container():
-        x = st.number_input("진수 (x, x > 0)", value=10.0, format="%.6f", key="log_x")
-
-        base_type = st.radio(
-            "로그 종류 선택",
-            ("상용로그 (log₁₀ x)", "자연로그 (ln x)", "밑을 내가 정하기"),
-            horizontal=False
-        )
-
-        custom_base = None
-        if base_type == "밑을 내가 정하기":
-            custom_base = st.number_input("밑 (b, b > 0, b ≠ 1)", value=2.0, format="%.6f", key="log_b")
-
-        if st.button("계산하기", key="log_calc"):
-            if x <= 0:
-                st.error("진수 x는 0보다 커야 합니다.")
-                expr = "Error: x ≤ 0"
-            else:
-                try:
-                    if base_type == "상용로그 (log₁₀ x)":
-                        result = math.log10(x)
-                        expr = f"log₁₀({x}) = {result}"
-                    elif base_type == "자연로그 (ln x)":
-                        result = math.log(x)
-                        expr = f"ln({x}) = {result}"
+            if st.button("계산하기", key="basic_calc"):
+                if op == "더하기 (a + b)":
+                    result = a + b
+                    expr = f"{a} + {b} = {result}"
+                elif op == "빼기 (a - b)":
+                    result = a - b
+                    expr = f"{a} - {b} = {result}"
+                elif op == "곱하기 (a × b)":
+                    result = a * b
+                    expr = f"{a} × {b} = {result}"
+                else:  # 나누기
+                    if b == 0:
+                        st.error("0으로는 나눌 수 없습니다. (b ≠ 0)")
+                        expr = "Error: divide by 0"
                     else:
-                        if custom_base is None:
-                            st.error("밑 b를 입력해 주세요.")
-                            expr = "Error: no base"
-                        elif custom_base <= 0 or custom_base == 1:
-                            st.error("밑 b는 0보다 크고 1이 아니어야 합니다.")
-                            expr = "Error: invalid base"
-                        else:
-                            result = math.log(x) / math.log(custom_base)
-                            expr = f"log₍{custom_base}₎({x}) = {result}"
-                except ValueError:
-                    st.error("로그를 계산할 수 없는 입력입니다.")
-                    expr = "Error: invalid input"
+                        result = a / b
+                        expr = f"{a} ÷ {b} = {result}"
+
+                st.session_state.display_text = expr
+                st.rerun()
+
+    # -------------------------------
+    # 1-2. 모듈러 연산
+    # -------------------------------
+    elif calc_mode == "모듈러 연산":
+        st.markdown(
+            """
+            <div class="calc-section">
+                <div class="calc-section-title">모듈러 연산 설정</div>
+                <div class="calc-section-caption">a mod n 형태의 연산을 계산합니다.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.container():
+            col1, col2 = st.columns(2)
+            with col1:
+                a = st.number_input("피제수 (a)", value=0, step=1, key="mod_a")
+            with col2:
+                n = st.number_input("법 (n, 양의 정수)", value=1, step=1, min_value=1, key="mod_n")
+
+            st.caption("※ 정수 입력을 권장합니다. (파이썬의 % 규칙을 그대로 사용합니다.)")
+
+            if st.button("계산하기", key="mod_calc"):
+                if n == 0:
+                    st.error("법 n은 0이 될 수 없습니다.")
+                    expr = "Error: n = 0"
+                else:
+                    result = a % n
+                    expr = f"{a} mod {n} = {result}"
+
+                st.session_state.display_text = expr
+                st.rerun()
+
+    # -------------------------------
+    # 1-3. 지수 연산
+    # -------------------------------
+    elif calc_mode == "지수 연산":
+        st.markdown(
+            """
+            <div class="calc-section">
+                <div class="calc-section-title">지수 연산 설정</div>
+                <div class="calc-section-caption">a^b 형태의 지수 연산을 계산합니다.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.container():
+            col1, col2 = st.columns(2)
+            with col1:
+                a = st.number_input("밑 (a)", value=2.0, format="%.6f", key="exp_a")
+            with col2:
+                b = st.number_input("지수 (b)", value=3.0, format="%.6f", key="exp_b")
+
+            if st.button("계산하기", key="exp_calc"):
+                try:
+                    result = a ** b
+                    expr = f"{a} ^ {b} = {result}"
+                except OverflowError:
+                    st.error("값이 너무 커서 계산할 수 없습니다.")
+                    expr = "Error: overflow"
                 except Exception as e:
                     st.error(f"계산 중 오류가 발생했습니다: {e}")
                     expr = "Error"
 
-            st.session_state.display_text = expr
-            st.rerun()
+                st.session_state.display_text = expr
+                st.rerun()
 
-# 계산기 카드 끝
-st.markdown('</div>', unsafe_allow_html=True)
+    # -------------------------------
+    # 1-4. 로그 연산
+    # -------------------------------
+    elif calc_mode == "로그 연산":
+        st.markdown(
+            """
+            <div class="calc-section">
+                <div class="calc-section-title">로그 연산 설정</div>
+                <div class="calc-section-caption">상용로그, 자연로그, 임의의 밑 로그를 계산합니다.</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        with st.container():
+            x = st.number_input("진수 (x, x > 0)", value=10.0, format="%.6f", key="log_x")
+
+            base_type = st.radio(
+                "로그 종류 선택",
+                ("상용로그 (log₁₀ x)", "자연로그 (ln x)", "밑을 내가 정하기"),
+                horizontal=False
+            )
+
+            custom_base = None
+            expr = ""
+            if base_type == "밑을 내가 정하기":
+                custom_base = st.number_input("밑 (b, b > 0, b ≠ 1)", value=2.0, format="%.6f", key="log_b")
+
+            if st.button("계산하기", key="log_calc"):
+                if x <= 0:
+                    st.error("진수 x는 0보다 커야 합니다.")
+                    expr = "Error: x ≤ 0"
+                else:
+                    try:
+                        if base_type == "상용로그 (log₁₀ x)":
+                            result = math.log10(x)
+                            expr = f"log₁₀({x}) = {result}"
+                        elif base_type == "자연로그 (ln x)":
+                            result = math.log(x)
+                            expr = f"ln({x}) = {result}"
+                        else:
+                            if custom_base is None:
+                                st.error("밑 b를 입력해 주세요.")
+                                expr = "Error: no base"
+                            elif custom_base <= 0 or custom_base == 1:
+                                st.error("밑 b는 0보다 크고 1이 아니어야 합니다.")
+                                expr = "Error: invalid base"
+                            else:
+                                result = math.log(x) / math.log(custom_base)
+                                expr = f"log₍{custom_base}₎({x}) = {result}"
+                    except ValueError:
+                        st.error("로그를 계산할 수 없는 입력입니다.")
+                        expr = "Error: invalid input"
+                    except Exception as e:
+                        st.error(f"계산 중 오류가 발생했습니다: {e}")
+                        expr = "Error"
+
+                st.session_state.display_text = expr
+                st.rerun()
+
+    # 계산기 카드 끝
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =============================================================================
+# 2. 확률 시뮬레이터 앱
+# =============================================================================
+elif app_mode == "확률 시뮬레이터":
+    st.subheader("🎲 확률 시뮬레이터")
+
+    st.markdown(
+        """
+        동전 또는 주사위를 선택하고 시행 횟수를 정한 뒤<br>
+        시뮬레이션을 실행하면 **실제 상대도수**를 Plotly 그래프로 볼 수 있습니다.
+        """,
+        unsafe_allow_html=True
+    )
+
+    # 실험 설정
+    col_exp, col_n = st.columns(2)
+    with col_exp:
+        experiment = st.radio(
+            "실험 종류",
+            ("동전 던지기", "주사위 던지기")
+        )
+    with col_n:
+        n_trials = st.number_input(
+            "시행 횟수",
+            min_value=1,
+            max_value=100000,
+            value=1000,
+            step=100
+        )
+
+    run = st.button("시뮬레이션 실행하기")
+
+    if run:
+        results = []
+
+        # -----------------------------
+        # 동전 던지기 시뮬레이션
+        # -----------------------------
+        if experiment == "동전 던지기":
+            for _ in range(n_trials):
+                outcome = random.choice(["앞면", "뒷면"])
+                results.append(outcome)
+
+            df = pd.DataFrame({"결과": results})
+            freq = df["결과"].value_counts().reset_index()
+            freq.columns = ["결과", "도수"]
+            freq["상대도수"] = freq["도수"] / n_trials
+
+            fig = px.bar(
+                freq,
+                x="결과",
+                y="상대도수",
+                text=freq["상대도수"].map(lambda x: f"{x:.3f}")
+            )
+            fig.update_traces(textposition="outside")
+            fig.update_layout(
+                yaxis_title="상대도수",
+                xaxis_title="결과",
+                title=f"동전 던지기 상대도수 (시행 횟수: {n_trials})"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(freq)
+
+            st.info("이론적으로는 앞면과 뒷면의 확률이 각각 0.5에 가깝게 나타나야 합니다.")
+
+        # -----------------------------
+        # 주사위 던지기 시뮬레이션
+        # -----------------------------
+        else:  # "주사위 던지기"
+            for _ in range(n_trials):
+                outcome = random.randint(1, 6)
+                results.append(outcome)
+
+            df = pd.DataFrame({"결과": results})
+            freq = df["결과"].value_counts().sort_index().reset_index()
+            freq.columns = ["결과", "도수"]
+            freq["상대도수"] = freq["도수"] / n_trials
+
+            fig = px.bar(
+                freq,
+                x="결과",
+                y="상대도수",
+                text=freq["상대도수"].map(lambda x: f"{x:.3f}")
+            )
+            fig.update_traces(textposition="outside")
+            fig.update_layout(
+                yaxis_title="상대도수",
+                xaxis_title="눈",
+                title=f"주사위 눈의 상대도수 (시행 횟수: {n_trials})"
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+            st.dataframe(freq)
+
+            st.info("이론적으로는 1~6의 각 눈이 모두 확률 1/6 ≈ 0.167 에 가깝게 나타나야 합니다.")
