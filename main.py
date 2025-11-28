@@ -1,5 +1,6 @@
 import math
 import random
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -156,7 +157,7 @@ if "display_text" not in st.session_state:
 st.sidebar.title("🧮 수학 웹앱")
 app_mode = st.sidebar.radio(
     "사용할 앱 선택",
-    ("계산기", "확률 시뮬레이터")
+    ("계산기", "확률 시뮬레이터", "연도별 세계인구 분석")
 )
 
 # -----------------------------------
@@ -164,16 +165,25 @@ app_mode = st.sidebar.radio(
 # -----------------------------------
 st.markdown('<h1 class="center-title">🧮 Multi Math App</h1>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="center-subtitle">계산기와 확률 시뮬레이터를 한 번에!</div>',
+    '<div class="center-subtitle">계산기 · 확률 시뮬레이터 · 세계 인구 분석</div>',
     unsafe_allow_html=True
 )
+
+# =============================================================================
+# 0. 데이터 로딩 함수 (세계 인구)
+# =============================================================================
+@st.cache_data
+def load_world_population():
+    # main.py와 같은 폴더에 있는 world_population.csv 사용
+    df = pd.read_csv("world_population.csv")
+    return df
 
 # =============================================================================
 # 1. 계산기 앱
 # =============================================================================
 if app_mode == "계산기":
 
-    # 계산기 내부 모드 (사칙/모듈러/지수/로그)는 사이드바에서 선택
+    # 계산기 내부 모드 (사칙/모듈러/지수/로그)
     calc_mode = st.sidebar.radio(
         "계산 모드 선택",
         ("사칙연산", "모듈러 연산", "지수 연산", "로그 연산")
@@ -472,3 +482,113 @@ elif app_mode == "확률 시뮬레이터":
             st.dataframe(freq)
 
             st.info("이론적으로는 1~6의 각 눈이 모두 확률 1/6 ≈ 0.167 에 가깝게 나타나야 합니다.")
+
+# =============================================================================
+# 3. 연도별 세계인구 분석 앱
+# =============================================================================
+elif app_mode == "연도별 세계인구 분석":
+    st.subheader("🌍 연도별 세계 인구 분석")
+
+    st.markdown(
+        """
+        `world_population.csv` 데이터를 이용해서<br>
+        **연도별 세계 인구 분포**와 **세계 인구 비율(%)**을<br>
+        Plotly 세계지도에서 시각화합니다.
+        """,
+        unsafe_allow_html=True
+    )
+
+    df_pop = load_world_population()
+
+    # 사용할 연도들 (CSV 컬럼명과 연결)
+    year_list = [1970, 1980, 1990, 2000, 2010, 2015, 2020, 2022]
+    year = st.selectbox("연도 선택", year_list, index=len(year_list) - 1)
+
+    st.markdown("---")
+
+    # -----------------------------
+    # 3-1. 해당 연도의 인구수 지도 (구간 색칠)
+    # -----------------------------
+    st.markdown(f"### 🗺 {year}년 세계 인구 분포 (구간별 색칠)")
+
+    pop_col = f"{year} Population"
+    if pop_col not in df_pop.columns:
+        st.error(f"데이터에 `{pop_col}` 컬럼이 없습니다. CSV 컬럼명을 확인하세요.")
+    else:
+        df_map = df_pop.copy()
+
+        # 인구수 구간 설정 (대략적인 구간)
+        bins_pop = [0, 1e7, 5e7, 1e8, 5e8, 2e9]
+        labels_pop = ["< 10M", "10M–50M", "50M–100M", "100M–500M", "≥ 500M"]
+
+        df_map["Population Range"] = pd.cut(
+            df_map[pop_col],
+            bins=bins_pop,
+            labels=labels_pop,
+            include_lowest=True
+        )
+
+        fig_pop = px.choropleth(
+            df_map,
+            locations="CCA3",  # 3자리 국가 코드
+            color="Population Range",
+            hover_name="Country/Territory",
+            hover_data={pop_col: ":,"},
+            category_orders={"Population Range": labels_pop},
+            title=f"{year}년 세계 인구 (구간별 인구수)"
+        )
+        fig_pop.update_layout(
+            legend_title_text="인구수 구간",
+        )
+
+        st.plotly_chart(fig_pop, use_container_width=True)
+
+    st.markdown("---")
+
+    # -----------------------------
+    # 3-2. 세계 인구 비율(%) 기준 지도
+    # -----------------------------
+    st.markdown("### 🌎 세계 인구 비율(%)에 따른 구간 색칠")
+
+    if "World Population Percentage" not in df_pop.columns:
+        st.error("데이터에 'World Population Percentage' 컬럼이 없습니다.")
+    else:
+        df_pct = df_pop.copy()
+
+        # world population percentage 구간 (값은 % 단위)
+        bins_pct = [0, 0.05, 0.1, 0.5, 1, 3, 10, 25]
+        labels_pct = [
+            "< 0.05%",
+            "0.05–0.1%",
+            "0.1–0.5%",
+            "0.5–1%",
+            "1–3%",
+            "3–10%",
+            "≥ 10%"
+        ]
+
+        df_pct["World Pop Share Range"] = pd.cut(
+            df_pct["World Population Percentage"],
+            bins=bins_pct,
+            labels=labels_pct,
+            include_lowest=True
+        )
+
+        fig_pct = px.choropleth(
+            df_pct,
+            locations="CCA3",
+            color="World Pop Share Range",
+            hover_name="Country/Territory",
+            hover_data={"World Population Percentage": True},
+            category_orders={"World Pop Share Range": labels_pct},
+            title="세계 인구에서 각 국가가 차지하는 비율(%) 구간"
+        )
+        fig_pct.update_layout(
+            legend_title_text="세계 인구 비율 구간"
+        )
+
+        st.plotly_chart(fig_pct, use_container_width=True)
+
+        st.caption(
+            "※ World Population Percentage 값은 각 나라 인구가 전체 세계 인구에서 차지하는 비율(%)입니다."
+        )
